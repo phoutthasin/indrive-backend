@@ -22,12 +22,27 @@ app.post('/api/auth/register', (req, res) => {
   const { username, phone, password, role } = req.body;
   console.log('📝 New Register Data:', { username, phone, role });
   
-  // 📍 ບ່ອນນີ້ສາມາດຂຽນโคດເຊື່ອມຕໍ່ Database ເພື່ອບັນທຶກຂໍ້ມູນລົງ DB ໄດ້ຕາມຕ້ອງການ
+  // 📍 ບ່ອນນີ້ສາມາດຂຽນໂຄດເຊື່ອມຕໍ່ Database ເພື່ອບັນທຶກຂໍ້ມູນລົງ DB ໄດ້ຕາມຕ້ອງການ
   
   res.status(200).json({ 
     success: true, 
     message: 'ສະໝັກສະມາຊິກສຳເລັດ!',
     data: { username, phone, role }
+  });
+});
+
+// REST API ສຳລັບເຂົ້າສູ່ລະບົບ (Login)
+app.post('/api/auth/login', (req, res) => {
+  const { phone, password } = req.body;
+  console.log('🔑 Login Request:', { phone });
+  
+  // 📍 ບ່ອນນີ້ສາມາດຂຽນໂຄດກວດສອບຂໍ້ມູນຈາກ Database
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'ເຂົ້າສູ່ລະບົບສຳເລັດ!',
+    token: 'mock-jwt-token-12345',
+    user: { phone }
   });
 });
 
