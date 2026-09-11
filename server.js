@@ -8,7 +8,7 @@ const app = express();
 // 1. Configure Express CORS
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -16,15 +16,18 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-// 2. Configure Socket.io CORS
+// 2. Configure Socket.io CORS & Transports ສໍາລັບແກ້ WebSocket/CORS Error
 const io = new Server(server, {
     cors: {
         origin: '*',
-        methods: ['GET', 'POST']
-    }
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: false
+    },
+    allowEIO3: true,
+    transports: ['polling', 'websocket']
 });
 
-// Memory Store ສຳລັບເກັບອໍເດີ້ຊົ່ວຄາວ (ໃນ Production ໃຫ້ປ່ຽນເປັນ PostgreSQL/Database)
+// Memory Store ສຳລັບເກັບອໍເດີ້ຊົ່ວຄາວ
 let pendingRides = [];
 
 // REST API ທົດສອບ
@@ -50,7 +53,6 @@ app.post('/api/auth/login', (req, res) => {
     const { phone, password } = req.body;
     console.log('🔑 Login Request:', { phone });
     
-    // ຕົວຢ່າງ static user payload (ສາມາດເຊື່ອມຕໍ່ DB ກວດສອບໄດ້)
     const userRole = phone.startsWith('0205') ? 'driver' : 'passenger';
     const userName = userRole === 'driver' ? 'ຄົນຂັບ ' + phone.slice(-4) : 'ລູກຄ້າ ' + phone.slice(-4);
 
@@ -76,7 +78,6 @@ app.post('/api/calculate-fare', (req, res) => {
         return res.status(400).json({ message: 'ຂໍ້ມູນພິກັດບໍ່ຄົບຖ້ວນ' });
     }
 
-    // ຟັງຊັນຄິດໄລ່ໄລຍະທາງ Haversine Formula (km)
     const R = 6371;
     const dLat = (dropoff_lat - pickup_lat) * Math.PI / 180;
     const dLng = (dropoff_lng - pickup_lng) * Math.PI / 180;
@@ -87,7 +88,6 @@ app.post('/api/calculate-fare', (req, res) => {
     
     const distance_km = parseFloat((R * c).toFixed(2));
     
-    // ຄິດໄລ່ລາຄາ: ເລີ່ມຕົ້ນ 15,000 ກີບ + km ລະ 5,000 ກີບ
     const baseFare = 15000;
     const perKmRate = 5000;
     const estimated_price = Math.round(baseFare + (distance_km * perKmRate));
@@ -117,7 +117,6 @@ app.post('/api/rides', (req, res) => {
 
     pendingRides.push(newRide);
     
-    // ແຈ້ງເຕືອນຫາຄົນຂັບທຸກຄົນຜ່ານ Socket.io
     io.emit('new_ride_requested', newRide);
 
     res.status(201).json({
@@ -145,10 +144,8 @@ app.put('/api/rides/:id/accept', (req, res) => {
     pendingRides[rideIndex].status = 'accepted';
     const acceptedRide = pendingRides[rideIndex];
 
-    // ລົບອໍເດີ້ອອກຈາກ pending
     pendingRides = pendingRides.filter(r => r.ride_id !== rideId);
 
-    // ແຈ້ງເຕືອນ Real-time ວ່າອໍເດີ້ຖືກຮັບແລ້ວ
     io.emit('ride_accepted', { ride_id: rideId, ride: acceptedRide });
 
     res.status(200).json({
