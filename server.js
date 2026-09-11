@@ -17,6 +17,20 @@ app.get('/', (req, res) => {
   res.send('inDrive Backend Real-time Server is running! 🚀');
 });
 
+// REST API ສຳລັບສະໝັກສະມາຊິກ (Register)
+app.post('/api/auth/register', (req, res) => {
+  const { username, phone, password, role } = req.body;
+  console.log('📝 New Register Data:', { username, phone, role });
+  
+  // 📍 ບ່ອນນີ້ສາມາດຂຽນโคດເຊື່ອມຕໍ່ Database ເພື່ອບັນທຶກຂໍ້ມູນລົງ DB ໄດ້ຕາມຕ້ອງການ
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'ສະໝັກສະມາຊິກສຳເລັດ!',
+    data: { username, phone, role }
+  });
+});
+
 // Socket.io Real-time Events
 io.on('connection', (socket) => {
   console.log(`⚡ User connected: ${socket.id}`);
