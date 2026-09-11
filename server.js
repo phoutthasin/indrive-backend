@@ -31,6 +31,21 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+// REST API ສຳລັບຄຳນວນຄ່າໂດຍສານ (Calculate Fare)
+app.post('/api/calculate-fare', (req, res) => {
+  const { pickup, dropoff } = req.body;
+  console.log('💰 Calculate Fare Request:', { pickup, dropoff });
+  
+  // 📍 ຄຳນວນຄ່າໂດຍສານເບື້ອງຕົ້ນ (ຕົວຢ່າງ: ຄິດໄລ່ຕາມระยะທາງ ຫຼື ຕັ້ງລາຄາຄົງທີ່)
+  const estimatedFare = 15000; // ຕົວຢ່າງ 15,000 ກີບ
+  
+  res.status(200).json({ 
+    success: true, 
+    fare: estimatedFare,
+    distance: '2.5 km'
+  });
+});
+
 // REST API ສຳລັບເຂົ້າສູ່ລະບົບ (Login)
 app.post('/api/auth/login', (req, res) => {
   const { phone, password } = req.body;
@@ -45,6 +60,7 @@ app.post('/api/auth/login', (req, res) => {
     user: { phone }
   });
 });
+
 
 // Socket.io Real-time Events
 io.on('connection', (socket) => {
