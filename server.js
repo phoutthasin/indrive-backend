@@ -1,0 +1,52 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] }
+});
+
+// REST API ທົດສອບ
+app.get('/', (req, res) => {
+  res.send('inDrive Backend Real-time Server is running! 🚀');
+});
+
+// Socket.io Real-time Events
+io.on('connection', (socket) => {
+  console.log(`⚡ User connected: ${socket.id}`);
+
+  // ລູກຄ້າ/ຄົນຂັບ ເຂົ້າ Room
+  socket.on('join_passenger_room', (userId) => socket.join('passengers'));
+  socket.on('join_driver_room', (driverId) => socket.join('drivers'));
+
+  // 1. ລູກຄ້າສົ່ງອໍເດີ -> ຍິງຫາຄົນຂັບທຸກຄົນ
+  socket.on('send_ride_request', (rideData) => {
+    console.log('📦 New Ride Request:', rideData);
+    io.to('drivers').emit('new_ride_available', {
+      ...rideData,
+      requestId: Date.now().toString(),
+      passengerSocketId: socket.id
+    });
+  });
+
+  // 2. ຄົນຂັບຕໍ່ຮອງລາຄາ (Counter Offer) -> ຍິງຫາລູກຄ້າເຈົ້າຂອງອໍເດີ
+  socket.on('driver_counter_offer', (offerData) => {
+    console.log('🏷️ Driver Counter Offer:', offerData);
+    io.to(offerData.passengerSocketId).emit('receive_counter_offer', offerData);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`❌ User disconnected: ${socket.id}`);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
